@@ -1,0 +1,11 @@
+{
+  "name": "support-gift",
+  "version": "1.0.0",
+  "description": "A loving support gift with animations",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": ["gift", "animation", "support"],
+  "license": "MIT"
+}
