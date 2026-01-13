@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import PreloadScene from './scenes/PreloadScene.js';
 import TitleScene from './scenes/TitleScene.js';
@@ -6,6 +5,11 @@ import CampusWalkScene from './scenes/CampusWalkScene.js';
 import MeetingScene from './scenes/MeetingScene.js';
 import RevealScene from './scenes/RevealScene.js';
 import CheesecakeScene from './scenes/CheesecakeScene.js';
+
+const Phaser = window.Phaser;
+if (!Phaser) {
+    throw new Error('Phaser not loaded. Make sure the Phaser script is included before main.js.');
+}
 
 const config = {
     type: Phaser.AUTO,
