@@ -6,8 +6,6 @@ export default class PreloadScene extends Phaser.Scene {
     }
 
     preload() {
-        // Generate all programmatic graphics first
-        AssetGenerator.generateAll(this);
         const { width, height } = this.cameras.main;
 
         // Loading bar background
@@ -63,41 +61,23 @@ export default class PreloadScene extends Phaser.Scene {
             assetText.destroy();
         });
 
-        // TODO: Download assets from sources in plan, then uncomment and update paths:
+        // Character sprites (Kenney, single frames + walk frames)
+        this.load.image('girl-sprite', 'sprites/characters/girl/girl-stand.png');
+        this.load.image('boy-sprite', 'sprites/characters/boy/boy-stand.png');
+        this.load.image('girl-walk1', 'sprites/characters/girl/girl-walk1.png');
+        this.load.image('girl-walk2', 'sprites/characters/girl/girl-walk2.png');
+        this.load.image('girl-jump', 'sprites/characters/girl/girl-jump.png');
+        this.load.image('boy-walk1', 'sprites/characters/boy/boy-walk1.png');
+        this.load.image('boy-walk2', 'sprites/characters/boy/boy-walk2.png');
+        this.load.image('boy-jump', 'sprites/characters/boy/boy-jump.png');
 
-        // // Character sprites (sprite sheets with animation frames)
-        // this.load.spritesheet('girl-idle', 'sprites/characters/girl/girl-idle.png', {
-        //     frameWidth: 64, frameHeight: 64
-        // });
-        // this.load.spritesheet('girl-walk', 'sprites/characters/girl/girl-walk.png', {
-        //     frameWidth: 64, frameHeight: 64
-        // });
-        // this.load.spritesheet('girl-jump', 'sprites/characters/girl/girl-jump.png', {
-        //     frameWidth: 64, frameHeight: 64
-        // });
-        // this.load.spritesheet('boy-idle', 'sprites/characters/boy/boy-idle.png', {
-        //     frameWidth: 64, frameHeight: 64
-        // });
+        // Particles (Kenney sparkle)
+        this.load.image('sparkle', 'sprites/particles/sparkle.png');
 
-        // // Environment
-        // this.load.image('campus-ground', 'tilesets/campus-ground.png');
-        // this.load.image('building', 'tilesets/building.png');
-        // this.load.image('tree', 'tilesets/tree.png');
-        // this.load.image('bench', 'tilesets/bench.png');
+        // Environment (optional; programmatic fallbacks still used)
+        this.load.image('campus-ground', 'tilesets/campus-ground.png');
 
-        // // Backgrounds
-        // this.load.image('sky-layer', 'backgrounds/sky-layer.png');
-        // this.load.image('distant-buildings', 'backgrounds/distant-buildings.png');
-        // this.load.image('trees-layer', 'backgrounds/trees-layer.png');
-        // this.load.image('garden-bg', 'backgrounds/garden-bg.png');
-
-        // // Particles
-        // this.load.image('heart', 'sprites/particles/heart.png');
-        // this.load.image('sparkle', 'sprites/particles/sparkle.png');
-        // this.load.image('petal', 'sprites/particles/petal.png');
-        // this.load.image('confetti', 'sprites/particles/confetti.png');
-
-        // // Music
+        // Music
         // this.load.audio('title-theme', 'audio/music/title-theme.mp3');
         // this.load.audio('campus-walk-music', 'audio/music/campus-walk.mp3');
         // this.load.audio('meeting-romance', 'audio/music/meeting-romance.mp3');
@@ -113,36 +93,45 @@ export default class PreloadScene extends Phaser.Scene {
     }
 
     create() {
-        // Create animations from sprite sheets
-        // TODO: Uncomment when sprites are loaded
+        // Ensure any missing textures are generated programmatically
+        AssetGenerator.generateAll(this);
 
-        // // Girl animations
-        // this.anims.create({
-        //     key: 'girl-idle-anim',
-        //     frames: this.anims.generateFrameNumbers('girl-idle', { start: 0, end: 3 }),
-        //     frameRate: 8,
-        //     repeat: -1
-        // });
-        // this.anims.create({
-        //     key: 'girl-walk-anim',
-        //     frames: this.anims.generateFrameNumbers('girl-walk', { start: 0, end: 7 }),
-        //     frameRate: 12,
-        //     repeat: -1
-        // });
-        // this.anims.create({
-        //     key: 'girl-jump-anim',
-        //     frames: this.anims.generateFrameNumbers('girl-jump', { start: 0, end: 3 }),
-        //     frameRate: 10,
-        //     repeat: 0
-        // });
+        // Create simple animations from individual frames if available
+        if (this.textures.exists('girl-walk1') && this.textures.exists('girl-walk2') && !this.anims.exists('girl-walk-anim')) {
+            this.anims.create({
+                key: 'girl-walk-anim',
+                frames: [{ key: 'girl-walk1' }, { key: 'girl-walk2' }],
+                frameRate: 6,
+                repeat: -1
+            });
+        }
 
-        // // Boy animations
-        // this.anims.create({
-        //     key: 'boy-idle-anim',
-        //     frames: this.anims.generateFrameNumbers('boy-idle', { start: 0, end: 3 }),
-        //     frameRate: 8,
-        //     repeat: -1
-        // });
+        if (this.textures.exists('girl-sprite') && !this.anims.exists('girl-idle-anim')) {
+            this.anims.create({
+                key: 'girl-idle-anim',
+                frames: [{ key: 'girl-sprite' }],
+                frameRate: 1,
+                repeat: -1
+            });
+        }
+
+        if (this.textures.exists('boy-walk1') && this.textures.exists('boy-walk2') && !this.anims.exists('boy-walk-anim')) {
+            this.anims.create({
+                key: 'boy-walk-anim',
+                frames: [{ key: 'boy-walk1' }, { key: 'boy-walk2' }],
+                frameRate: 6,
+                repeat: -1
+            });
+        }
+
+        if (this.textures.exists('boy-sprite') && !this.anims.exists('boy-idle-anim')) {
+            this.anims.create({
+                key: 'boy-idle-anim',
+                frames: [{ key: 'boy-sprite' }],
+                frameRate: 1,
+                repeat: -1
+            });
+        }
 
         // Fade to title screen
         this.cameras.main.fadeIn(500, 0, 0, 0);

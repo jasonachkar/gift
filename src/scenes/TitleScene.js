@@ -1,3 +1,5 @@
+import AudioManager from '../systems/AudioManager.js';
+
 export default class TitleScene extends Phaser.Scene {
     constructor() {
         super({ key: 'TitleScene' });
@@ -8,19 +10,51 @@ export default class TitleScene extends Phaser.Scene {
         const centerX = width / 2;
         const centerY = height / 2;
 
+        this.audio = new AudioManager(this);
+        this.audio.playMusic('title-theme', { volume: 0.35 });
+
         // Background gradient (using rectangles)
         this.add.rectangle(0, 0, width, height, 0xFFB6C1).setOrigin(0, 0).setDepth(0);
 
-        // Floating hearts particle emitter
-        this.add.particles(0, 0, 'heart', {
-            x: { min: 0, max: width },
-            y: height + 50,
-            lifespan: 8000,
-            speedY: { min: -100, max: -50 },
-            speedX: { min: -20, max: 20 },
-            scale: { start: 0.5, end: 0.3 },
-            alpha: { start: 0.6, end: 0 },
-            frequency: 500
+        // Stable floating hearts (avoid particle jitter)
+        this.titleHearts = [];
+        const heartCount = Math.max(12, Math.floor(width / 120));
+        for (let i = 0; i < heartCount; i++) {
+            const heart = this.add.image(
+                Phaser.Math.Between(0, width),
+                Phaser.Math.Between(0, height),
+                'heart'
+            )
+                .setScale(Phaser.Math.FloatBetween(0.4, 0.7))
+                .setAlpha(0.7)
+                .setDepth(1);
+            heart.setData('speed', Phaser.Math.FloatBetween(35, 70));
+            heart.setData('sway', Phaser.Math.FloatBetween(6, 14));
+            heart.setData('phase', Phaser.Math.FloatBetween(0, Math.PI * 2));
+            heart.setData('baseX', heart.x);
+            this.titleHearts.push(heart);
+        }
+
+        this.titleHeartUpdate = (time, delta) => {
+            const deltaSec = delta / 1000;
+            const t = time / 1000;
+            this.titleHearts.forEach((heart) => {
+                const speed = heart.getData('speed');
+                const sway = heart.getData('sway');
+                const phase = heart.getData('phase');
+                heart.y -= speed * deltaSec;
+                heart.x = heart.getData('baseX') + Math.sin(t + phase) * sway;
+                if (heart.y < -40) {
+                    heart.y = height + 40;
+                    heart.setData('baseX', Phaser.Math.Between(0, width));
+                    heart.setScale(Phaser.Math.FloatBetween(0.4, 0.7));
+                    heart.setAlpha(0.7);
+                }
+            });
+        };
+        this.events.on('update', this.titleHeartUpdate);
+        this.events.once('shutdown', () => {
+            this.events.off('update', this.titleHeartUpdate);
         });
 
         // Cherry blossom petals
@@ -64,11 +98,12 @@ export default class TitleScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Character sprites
+        const titleScale = 1.1;
         const girlfriend = this.add.sprite(centerX - 60, centerY + 80, 'girl-sprite')
-            .setScale(1.5);
+            .setScale(titleScale);
 
         const boyfriend = this.add.sprite(centerX + 60, centerY + 80, 'boy-sprite')
-            .setScale(1.5);
+            .setScale(titleScale);
 
         // Bobbing animation
         this.tweens.add({
@@ -90,13 +125,13 @@ export default class TitleScene extends Phaser.Scene {
         });
 
         // Heart between them
-        const loveHeart = this.add.text(centerX, centerY + 60, '❤️', {
-            fontSize: '40px'
-        }).setOrigin(0.5);
+        const loveHeart = this.add.image(centerX, centerY + 60, 'heart')
+            .setScale(1.4)
+            .setDepth(2);
 
         this.tweens.add({
             targets: loveHeart,
-            scale: { from: 1.0, to: 1.2 },
+            scale: { from: 1.3, to: 1.6 },
             duration: 750,
             yoyo: true,
             repeat: -1,
@@ -125,6 +160,10 @@ export default class TitleScene extends Phaser.Scene {
     }
 
     startGame() {
+        if (this.audio) {
+            this.audio.stopAll();
+        }
+
         // Fade out transition
         this.cameras.main.fadeOut(500, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {

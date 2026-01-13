@@ -30,17 +30,28 @@ export default class BootScene extends Phaser.Scene {
         });
 
         // Wait for user interaction to unlock audio
-        this.input.once('pointerdown', () => {
-            // Unlock audio context
+        this.input.once('pointerdown', () => this.startGame(tapText));
+        this.input.keyboard.once('keydown-SPACE', () => this.startGame(tapText));
+        this.input.keyboard.once('keydown-ENTER', () => this.startGame(tapText));
+    }
+
+    startGame(tapText) {
+        if (this.sound && this.sound.locked) {
             this.sound.unlock();
+        }
+        if (this.sound && this.sound.context && this.sound.context.state === 'suspended') {
+            this.sound.context.resume();
+        }
+        if (typeof window !== 'undefined') {
+            window.__giftAudioContext = this.sound && this.sound.context ? this.sound.context : null;
+        }
 
-            tapText.destroy();
+        tapText.destroy();
 
-            // Fade and start preload scene
-            this.cameras.main.fadeOut(500, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-                this.scene.start('PreloadScene');
-            });
+        // Fade and start preload scene
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('PreloadScene');
         });
     }
 }

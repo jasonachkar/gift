@@ -34,63 +34,65 @@ if ! command -v curl &> /dev/null; then
 fi
 
 # Download the platformer characters pack
-curl -L -o platformer-characters.zip "https://kenney.nl/content/3-assets/12-platformer-characters-1/platformercharacters.zip"
+fetch_zip_url() {
+    local page_url="$1"
+    local zip_url
+    zip_url=$(curl -fsSL "$page_url" | grep -Eo 'https://[^" ]+\.zip' | head -n 1)
+    if [ -z "$zip_url" ]; then
+        echo "❌ Error: Could not find ZIP download on $page_url"
+        exit 1
+    fi
+    echo "$zip_url"
+}
+
+platformer_characters_url=$(fetch_zip_url "https://kenney.nl/assets/platformer-characters")
+curl -L -o platformer-characters.zip "$platformer_characters_url"
 
 # Download platformer pack redux
 echo ""
 echo "🏛️ Downloading environment assets from Kenney..."
-curl -L -o platformer-pack.zip "https://kenney.nl/content/3-assets/13-platformer-pack-redux/platformerpackredux.zip"
+platformer_pack_url=$(fetch_zip_url "https://kenney.nl/assets/platformer-pack-redux")
+curl -L -o platformer-pack.zip "$platformer_pack_url"
 
 # Download particle pack
 echo ""
 echo "✨ Downloading particle pack from Kenney..."
-curl -L -o particle-pack.zip "https://kenney.nl/content/3-assets/32-particle-pack/particlepack.zip"
+particle_pack_url=$(fetch_zip_url "https://kenney.nl/assets/particle-pack")
+curl -L -o particle-pack.zip "$particle_pack_url"
 
 # Extract everything
 echo ""
 echo "📦 Extracting assets..."
 if command -v unzip &> /dev/null; then
-    unzip -q platformer-characters.zip -d platformer-characters
-    unzip -q platformer-pack.zip -d platformer-pack
-    unzip -q particle-pack.zip -d particle-pack
+    unzip -q -o platformer-characters.zip -d platformer-characters
+    unzip -q -o platformer-pack.zip -d platformer-pack
+    unzip -q -o particle-pack.zip -d particle-pack
 else
     echo "❌ Error: unzip is not installed. Please install unzip first."
     exit 1
 fi
 
-# Copy character sprites (we'll use the first female and male characters we find)
+# Copy character sprites (stand + walk + jump frames)
 echo ""
 echo "🎨 Organizing character sprites..."
 
-# Find and copy appropriate sprites from Kenney pack
-# Note: Kenney sprites come as individual PNGs, we'll need to create sprite sheets or use individual frames
-# For now, let's copy some base sprites
+cp -f "platformer-characters/PNG/Female/Poses/female_stand.png" "../assets/sprites/characters/girl/girl-stand.png"
+cp -f "platformer-characters/PNG/Female/Poses/female_walk1.png" "../assets/sprites/characters/girl/girl-walk1.png"
+cp -f "platformer-characters/PNG/Female/Poses/female_walk2.png" "../assets/sprites/characters/girl/girl-walk2.png"
+cp -f "platformer-characters/PNG/Female/Poses/female_jump.png" "../assets/sprites/characters/girl/girl-jump.png"
+
+cp -f "platformer-characters/PNG/Player/Poses/player_stand.png" "../assets/sprites/characters/boy/boy-stand.png"
+cp -f "platformer-characters/PNG/Player/Poses/player_walk1.png" "../assets/sprites/characters/boy/boy-walk1.png"
+cp -f "platformer-characters/PNG/Player/Poses/player_walk2.png" "../assets/sprites/characters/boy/boy-walk2.png"
+cp -f "platformer-characters/PNG/Player/Poses/player_jump.png" "../assets/sprites/characters/boy/boy-jump.png"
+
+# Copy particles (sparkle only; others stay programmatic)
+cp -f "particle-pack/PNG (Transparent)/spark_05.png" "../assets/sprites/particles/sparkle.png"
+
+# Copy a simple ground tile (optional)
+cp -f "platformer-pack/PNG/Tiles/grass.png" "../assets/tilesets/campus-ground.png"
+
 cd ..
-
-# Since Kenney doesn't provide ready-made sprite sheets, let's provide instructions
-echo ""
-echo "⚠️  IMPORTANT: Manual step required!"
-echo ""
-echo "Kenney provides individual PNG files, not sprite sheets."
-echo "You have two options:"
-echo ""
-echo "Option 1 (Recommended): Use online sprite sheet creator"
-echo "  1. Go to: https://www.leshylabs.com/apps/sstool/"
-echo "  2. Upload the character images from temp_downloads/platformer-characters/"
-echo "  3. Create sprite sheets for idle, walk, and jump animations"
-echo "  4. Save them to assets/sprites/characters/"
-echo ""
-echo "Option 2: I'll create simple placeholder sprites for you right now"
-echo "  These will be basic but functional colored rectangles"
-echo ""
-read -p "Press 1 for Option 1 (manual), or 2 for auto-placeholders: " choice
-
-if [ "$choice" = "2" ]; then
-    echo ""
-    echo "🎨 Creating simple placeholder sprites..."
-    # We'll create these programmatically in the code instead
-    touch assets/sprites/characters/.use-programmatic-sprites
-fi
 
 # Download music (using YouTube Audio Library / Free Music Archive alternatives)
 echo ""
@@ -121,28 +123,15 @@ echo "   - 'firework' -> assets/audio/sfx/firework.mp3"
 echo "   - 'whoosh' -> assets/audio/sfx/whoosh.mp3"
 echo ""
 
-# Copy particles
-echo "✨ Copying particle textures..."
-if [ -d "temp_downloads/particle-pack" ]; then
-    # Find and copy appropriate particle images
-    find temp_downloads/particle-pack -name "*star*" -o -name "*spark*" | head -1 | xargs -I {} cp {} assets/sprites/particles/sparkle.png 2>/dev/null || true
-    find temp_downloads/particle-pack -name "*circle*" -o -name "*light*" | head -1 | xargs -I {} cp {} assets/sprites/particles/heart.png 2>/dev/null || true
-fi
-
-# Copy environment assets
-echo "🏛️ Copying environment assets..."
-if [ -d "temp_downloads/platformer-pack" ]; then
-    find temp_downloads/platformer-pack -name "*ground*" | head -1 | xargs -I {} cp {} assets/tilesets/campus-ground.png 2>/dev/null || true
-    find temp_downloads/platformer-pack -name "*tree*" | head -1 | xargs -I {} cp {} assets/tilesets/tree.png 2>/dev/null || true
-fi
+echo "✨ Copied particle texture and ground tile from Kenney."
 
 echo ""
 echo "✅ Basic assets downloaded and organized!"
 echo ""
 echo "📝 Summary:"
+echo "   ✅ Character sprites copied (stand/walk/jump frames)"
 echo "   ✅ Particle textures from Kenney"
 echo "   ✅ Environment tiles from Kenney"
-echo "   ⚠️  Character sprites need sprite sheet creation (or using placeholders)"
 echo "   ⚠️  Music needs manual download (CC0 sites listed above)"
 echo "   ⚠️  Sound effects need manual download (freesound.org)"
 echo ""

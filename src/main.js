@@ -5,6 +5,7 @@ import TitleScene from './scenes/TitleScene.js';
 import CampusWalkScene from './scenes/CampusWalkScene.js';
 import MeetingScene from './scenes/MeetingScene.js';
 import RevealScene from './scenes/RevealScene.js';
+import CheesecakeScene from './scenes/CheesecakeScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -29,7 +30,8 @@ const config = {
         TitleScene,
         CampusWalkScene,
         MeetingScene,
-        RevealScene
+        RevealScene,
+        CheesecakeScene
     ]
 };
 

@@ -1,4 +1,5 @@
 import DialogueSystem from '../systems/DialogueSystem.js';
+import AudioManager from '../systems/AudioManager.js';
 
 export default class MeetingScene extends Phaser.Scene {
     constructor() {
@@ -12,6 +13,17 @@ export default class MeetingScene extends Phaser.Scene {
     create() {
         const { width, height } = this.cameras.main;
         const groundY = height - 100;
+
+        this.audio = new AudioManager(this);
+        this.audio.playMusic('meeting-romance', { volume: 0.3 });
+        this.cameras.main.fadeIn(600, 0, 0, 0);
+        this.cameras.main.setZoom(1.02);
+        this.tweens.add({
+            targets: this.cameras.main,
+            zoom: 1,
+            duration: 2000,
+            ease: 'Sine.easeOut'
+        });
 
         // Garden background
         this.add.image(width / 2, height / 2, 'garden-bg').setOrigin(0.5).setAlpha(0.7).setDepth(-90);
@@ -37,10 +49,10 @@ export default class MeetingScene extends Phaser.Scene {
 
         // Character sprites
         this.girlfriend = this.add.sprite(-50, groundY, 'girl-sprite')
-            .setScale(2.5).setOrigin(0.5, 1);
+            .setScale(1.6).setOrigin(0.5, 1);
 
         this.boyfriend = this.add.sprite(width / 2 + 100, groundY, 'boy-sprite')
-            .setScale(2.5).setOrigin(0.5, 1);
+            .setScale(1.6).setOrigin(0.5, 1);
 
         // Boyfriend idle animation
         this.tweens.add({
@@ -66,6 +78,19 @@ export default class MeetingScene extends Phaser.Scene {
             alpha: { start: 0.8, end: 0 },
             rotate: { start: 0, end: 360 },
             frequency: 500
+        });
+
+        // Ambient sparkles
+        this.add.particles(0, 0, 'sparkle', {
+            x: { min: 0, max: width },
+            y: { min: 0, max: height / 2 },
+            lifespan: 5000,
+            speedY: { min: -20, max: 20 },
+            speedX: { min: -10, max: 10 },
+            scale: { start: 0.3, end: 0 },
+            alpha: { start: 0.25, end: 0 },
+            frequency: 800,
+            blendMode: 'ADD'
         });
 
         // Start animation sequence
@@ -145,6 +170,10 @@ export default class MeetingScene extends Phaser.Scene {
 
                 // Heart explosion particle effect
                 this.createHeartExplosion(width / 2, groundY - 50);
+                if (this.audio) {
+                    this.audio.playSfx('hug');
+                }
+                this.cameras.main.shake(200, 0.002);
 
                 // Show message
                 this.time.delayedCall(1000, () => {
@@ -206,8 +235,9 @@ export default class MeetingScene extends Phaser.Scene {
     }
 
     goToReveal() {
-        // TODO: Stop music
-        // this.meetingMusic.stop();
+        if (this.audio) {
+            this.audio.stopAll();
+        }
 
         this.cameras.main.fadeOut(500, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
