@@ -11,50 +11,29 @@ export default class TitleScene extends Phaser.Scene {
         // Background gradient (using rectangles)
         this.add.rectangle(0, 0, width, height, 0xFFB6C1).setOrigin(0, 0).setDepth(0);
 
-        // TODO: Add particle emitters when particle textures are loaded
-        // For now, creating simple heart emojis as placeholders
-
-        // Floating hearts (placeholder - will use particle emitter)
-        this.time.addEvent({
-            delay: 500,
-            callback: () => {
-                const heart = this.add.text(
-                    Phaser.Math.Between(0, width),
-                    height + 50,
-                    '💕',
-                    { fontSize: Phaser.Math.Between(20, 40) + 'px' }
-                ).setAlpha(0.6);
-
-                this.tweens.add({
-                    targets: heart,
-                    y: -50,
-                    duration: 8000,
-                    onComplete: () => heart.destroy()
-                });
-            },
-            loop: true
+        // Floating hearts particle emitter
+        this.add.particles(0, 0, 'heart', {
+            x: { min: 0, max: width },
+            y: height + 50,
+            lifespan: 8000,
+            speedY: { min: -100, max: -50 },
+            speedX: { min: -20, max: 20 },
+            scale: { start: 0.5, end: 0.3 },
+            alpha: { start: 0.6, end: 0 },
+            frequency: 500
         });
 
-        // Cherry blossoms (placeholder)
-        this.time.addEvent({
-            delay: 300,
-            callback: () => {
-                const petal = this.add.text(
-                    Phaser.Math.Between(0, width),
-                    -30,
-                    '🌸',
-                    { fontSize: Phaser.Math.Between(15, 30) + 'px' }
-                ).setAlpha(0.8);
-
-                this.tweens.add({
-                    targets: petal,
-                    y: height + 30,
-                    x: petal.x + Phaser.Math.Between(-50, 50),
-                    duration: 10000,
-                    onComplete: () => petal.destroy()
-                });
-            },
-            loop: true
+        // Cherry blossom petals
+        this.add.particles(0, 0, 'petal', {
+            x: { min: 0, max: width },
+            y: -30,
+            lifespan: 10000,
+            speedY: { min: 30, max: 80 },
+            speedX: { min: -30, max: 30 },
+            alpha: { start: 0.8, end: 0.3 },
+            scale: { start: 0.6, end: 0.3 },
+            rotate: { start: 0, end: 360 },
+            frequency: 300
         });
 
         // Title with animation
@@ -84,15 +63,12 @@ export default class TitleScene extends Phaser.Scene {
             color: '#ffffff'
         }).setOrigin(0.5);
 
-        // Character preview (using emojis as placeholders)
-        // TODO: Replace with sprite animations when assets are loaded
-        const girlfriend = this.add.text(centerX - 60, centerY + 80, '👩‍🎓', {
-            fontSize: '80px'
-        }).setOrigin(0.5);
+        // Character sprites
+        const girlfriend = this.add.sprite(centerX - 60, centerY + 80, 'girl-sprite')
+            .setScale(1.5);
 
-        const boyfriend = this.add.text(centerX + 60, centerY + 80, '👨', {
-            fontSize: '80px'
-        }).setOrigin(0.5);
+        const boyfriend = this.add.sprite(centerX + 60, centerY + 80, 'boy-sprite')
+            .setScale(1.5);
 
         // Bobbing animation
         this.tweens.add({

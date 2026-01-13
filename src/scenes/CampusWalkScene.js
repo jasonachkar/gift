@@ -10,13 +10,15 @@ export default class CampusWalkScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
         const groundY = height - 80;
 
-        // Sky gradient background (placeholder - will be parallax layers)
-        this.add.rectangle(0, 0, width, height * 0.6, 0x87CEEB).setOrigin(0, 0).setDepth(-100);
-        this.add.rectangle(0, height * 0.6, width, height * 0.4, 0x228B22).setOrigin(0, 0).setDepth(-100);
+        // Parallax backgrounds
+        this.skyBg = this.add.tileSprite(0, 0, width * 3, 400, 'sky-layer')
+            .setOrigin(0, 0).setDepth(-100).setScrollFactor(0.1);
 
-        // TODO: Add parallax backgrounds when assets are loaded
-        // this.skyBg = this.add.tileSprite(0, 0, width * 3, 400, 'sky-layer')
-        //     .setOrigin(0, 0).setDepth(-100).setScrollFactor(0.1);
+        this.distantBuildings = this.add.tileSprite(0, 100, width * 3, 300, 'distant-buildings')
+            .setOrigin(0, 0).setDepth(-90).setScrollFactor(0.3);
+
+        this.treesLayer = this.add.tileSprite(0, 200, width * 3, 400, 'trees-layer')
+            .setOrigin(0, 0).setDepth(-80).setScrollFactor(0.6);
 
         // Ground platform
         const ground = this.physics.add.staticGroup();
@@ -27,15 +29,14 @@ export default class CampusWalkScene extends Phaser.Scene {
         // Path decoration
         this.add.rectangle(0, groundY + 10, width * 10, 30, 0xC2B280).setOrigin(0, 0).setDepth(-1);
 
-        // Player character (emoji placeholder - will be sprite)
-        // TODO: Replace with sprite when assets are loaded
-        this.player = this.add.text(100, groundY - 30, '👩‍🎓', {
-            fontSize: '60px'
-        }).setOrigin(0.5);
+        // Player character sprite
+        this.player = this.add.sprite(100, groundY - 36, 'girl-sprite');
+        this.player.setScale(2);
         this.physics.add.existing(this.player);
         this.player.body.setBounce(0.1);
         this.player.body.setCollideWorldBounds(false);
-        this.player.body.setSize(40, 60);
+        this.player.body.setSize(32, 60);
+        this.player.body.setOffset(16, 12);
 
         this.physics.add.collider(this.player, ground);
 
@@ -88,41 +89,29 @@ export default class CampusWalkScene extends Phaser.Scene {
             color: '#ffffff'
         }).setOrigin(0.5).setScrollFactor(0).setAlpha(0.8);
 
-        // TODO: Add audio when assets are loaded
-        // this.campusMusic = this.sound.add('campus-walk-music', { loop: true, volume: 0.6 });
-        // this.campusMusic.play();
-
-        // Falling petals (placeholder)
-        this.time.addEvent({
-            delay: 400,
-            callback: () => {
-                const petal = this.add.text(
-                    this.cameras.main.scrollX + Phaser.Math.Between(0, width),
-                    this.cameras.main.scrollY - 20,
-                    '🌸',
-                    { fontSize: Phaser.Math.Between(15, 25) + 'px' }
-                ).setAlpha(0.8);
-
-                this.tweens.add({
-                    targets: petal,
-                    y: petal.y + 500,
-                    x: petal.x + Phaser.Math.Between(-30, 30),
-                    duration: 8000,
-                    onComplete: () => petal.destroy()
-                });
-            },
-            loop: true
+        // Falling cherry blossom petals
+        this.petalEmitter = this.add.particles(0, 0, 'petal', {
+            x: { min: 0, max: width },
+            y: -20,
+            lifespan: 8000,
+            speedY: { min: 40, max: 80 },
+            speedX: { min: -30, max: 30 },
+            scale: { start: 0.5, end: 0.2 },
+            alpha: { start: 0.8, end: 0 },
+            rotate: { start: 0, end: 360 },
+            frequency: 400
         });
+        this.petalEmitter.setScrollFactor(0.5);
     }
 
     update(time, delta) {
         // Player movement
         if (this.cursors.left.isDown) {
             this.player.body.setVelocityX(-300);
-            this.player.flipX = true;
+            this.player.setFlipX(true);
         } else if (this.cursors.right.isDown) {
             this.player.body.setVelocityX(300);
-            this.player.flipX = false;
+            this.player.setFlipX(false);
         } else {
             this.player.body.setVelocityX(0);
         }
@@ -130,8 +119,18 @@ export default class CampusWalkScene extends Phaser.Scene {
         // Jump
         if (Phaser.Input.Keyboard.JustDown(this.spaceKey) && this.player.body.touching.down) {
             this.player.body.setVelocityY(-550);
-            // TODO: Play jump sound
         }
+
+        // Update parallax backgrounds
+        this.skyBg.tilePositionX = this.cameras.main.scrollX * 0.1;
+        this.distantBuildings.tilePositionX = this.cameras.main.scrollX * 0.3;
+        this.treesLayer.tilePositionX = this.cameras.main.scrollX * 0.6;
+
+        // Update petal emitter position to follow camera
+        this.petalEmitter.setPosition(
+            this.cameras.main.scrollX + this.cameras.main.width / 2,
+            this.cameras.main.scrollY
+        );
 
         // Update progress
         this.progress = Math.max(0, this.player.x - 100);
@@ -145,14 +144,15 @@ export default class CampusWalkScene extends Phaser.Scene {
     }
 
     spawnDecorations(groundY) {
-        const decorations = ['🏛️', '📚', '🌳', '🌲', '🏫', '🎓', '🌺'];
+        const decorationTypes = ['tree', 'building', 'flower', 'bench'];
         let xPos = 200;
         while (xPos < this.targetProgress + 500) {
-            const deco = Phaser.Math.RND.pick(decorations);
-            const size = Phaser.Math.Between(40, 80);
-            this.add.text(xPos, groundY - size / 2, deco, {
-                fontSize: size + 'px'
-            }).setOrigin(0.5, 1).setDepth(-5);
+            const decoType = Phaser.Math.RND.pick(decorationTypes);
+            const scale = Phaser.Math.FloatBetween(0.5, 1.2);
+            const deco = this.add.sprite(xPos, groundY, decoType)
+                .setScale(scale)
+                .setOrigin(0.5, 1)
+                .setDepth(-5);
             xPos += Phaser.Math.Between(150, 350);
         }
     }
@@ -160,12 +160,11 @@ export default class CampusWalkScene extends Phaser.Scene {
     spawnHearts(groundY) {
         let xPos = 300;
         while (xPos < this.targetProgress + 200) {
-            const heart = this.add.text(
+            const heart = this.add.sprite(
                 xPos,
                 Phaser.Math.Between(200, 400),
-                '💖',
-                { fontSize: '30px' }
-            ).setOrigin(0.5);
+                'heart'
+            ).setScale(1.5).setOrigin(0.5);
 
             this.physics.add.existing(heart);
             heart.body.setAllowGravity(false);
@@ -186,28 +185,24 @@ export default class CampusWalkScene extends Phaser.Scene {
     }
 
     collectHeart(player, heart) {
+        const x = heart.x;
+        const y = heart.y;
         heart.destroy();
         this.heartsCollected++;
         this.heartCounter.setText(`💕 ${this.heartsCollected}`);
 
-        // TODO: Play collect sound
-        // this.sound.play('heart-collect', { volume: 0.5 });
+        // Sparkle burst effect
+        const burst = this.add.particles(x, y, 'sparkle', {
+            speed: { min: 100, max: 200 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 500,
+            quantity: 8,
+            blendMode: 'ADD'
+        });
 
-        // Burst effect
-        for (let i = 0; i < 5; i++) {
-            const sparkle = this.add.text(heart.x, heart.y, '✨', {
-                fontSize: '20px'
-            }).setOrigin(0.5);
-
-            this.tweens.add({
-                targets: sparkle,
-                x: sparkle.x + Phaser.Math.Between(-50, 50),
-                y: sparkle.y + Phaser.Math.Between(-50, 50),
-                alpha: 0,
-                duration: 500,
-                onComplete: () => sparkle.destroy()
-            });
-        }
+        this.time.delayedCall(500, () => burst.destroy());
     }
 
     handleTouch(pointer) {

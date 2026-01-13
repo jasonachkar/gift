@@ -1,9 +1,13 @@
+import AssetGenerator from '../utils/AssetGenerator.js';
+
 export default class PreloadScene extends Phaser.Scene {
     constructor() {
         super({ key: 'PreloadScene' });
     }
 
     preload() {
+        // Generate all programmatic graphics first
+        AssetGenerator.generateAll(this);
         const { width, height } = this.cameras.main;
 
         // Loading bar background

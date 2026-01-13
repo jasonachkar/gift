@@ -15,9 +15,8 @@ export default class RevealScene extends Phaser.Scene {
             .setOrigin(0, 0).setDepth(-100);
 
         // Couple sprite (walking in)
-        this.couple = this.add.text(-50, height - 100, '👫', {
-            fontSize: '70px'
-        }).setOrigin(0.5, 1);
+        this.couple = this.add.sprite(-50, height - 100, 'couple-sprite')
+            .setScale(2.5).setOrigin(0.5, 1);
 
         // Banner/wall (hidden initially)
         this.bannerBorder = this.add.rectangle(width / 2, height / 2 - 50, 520, 320, 0xFF69B4)
@@ -151,139 +150,93 @@ export default class RevealScene extends Phaser.Scene {
     startMassiveCelebration() {
         const { width, height } = this.cameras.main;
 
-        // 1. FIREWORKS (emoji placeholders)
+        // 1. FIREWORKS - Random colored explosions
         this.time.addEvent({
             delay: 300,
             callback: () => {
                 const fx = Phaser.Math.Between(100, width - 100);
                 const fy = Phaser.Math.Between(50, height / 2);
+                const colors = [0xFF0000, 0xFFA500, 0xFFFF00, 0x00FF00, 0x0000FF, 0xFF00FF, 0xFF69B4];
+                const color = Phaser.Math.RND.pick(colors);
 
                 // Create firework explosion
-                const colors = ['❤️', '🧡', '💛', '💚', '💙', '💜'];
-                const emoji = Phaser.Math.RND.pick(colors);
-
-                for (let i = 0; i < 15; i++) {
-                    const particle = this.add.text(fx, fy, emoji, {
-                        fontSize: Phaser.Math.Between(15, 30) + 'px'
-                    }).setOrigin(0.5);
-
-                    const angle = Phaser.Math.Between(0, 360);
-                    const speed = Phaser.Math.Between(100, 300);
-
-                    this.tweens.add({
-                        targets: particle,
-                        x: particle.x + Math.cos(angle * Math.PI / 180) * speed,
-                        y: particle.y + Math.sin(angle * Math.PI / 180) * speed,
-                        alpha: 0,
-                        duration: 2000,
-                        onComplete: () => particle.destroy()
-                    });
-                }
-
-                // TODO: Play firework sound
-                // this.sound.play('firework', { volume: 0.3 });
-            },
-            loop: true
-        });
-
-        // 2. CONFETTI RAIN
-        this.time.addEvent({
-            delay: 100,
-            callback: () => {
-                const confetti = this.add.text(
-                    Phaser.Math.Between(0, width),
-                    -30,
-                    Phaser.Math.RND.pick(['🎊', '🎉', '✨', '💫', '⭐']),
-                    { fontSize: Phaser.Math.Between(20, 35) + 'px' }
-                );
-
-                this.tweens.add({
-                    targets: confetti,
-                    y: height + 30,
-                    x: confetti.x + Phaser.Math.Between(-50, 50),
-                    rotation: Phaser.Math.Between(0, 360),
-                    duration: 5000,
-                    onComplete: () => confetti.destroy()
+                const firework = this.add.particles(fx, fy, 'sparkle', {
+                    speed: { min: 100, max: 300 },
+                    angle: { min: 0, max: 360 },
+                    scale: { start: 1, end: 0 },
+                    tint: color,
+                    alpha: { start: 1, end: 0 },
+                    lifespan: 2000,
+                    quantity: 15,
+                    blendMode: 'ADD'
                 });
+
+                this.time.delayedCall(2000, () => firework.destroy());
             },
             loop: true
         });
 
-        // 3. FLOWERS FROM BOTTOM
-        this.time.addEvent({
-            delay: 400,
-            callback: () => {
-                const flowers = ['🌸', '🌺', '🌷', '🌹', '🌻', '💐', '🌼'];
-                const flower = this.add.text(
-                    Phaser.Math.Between(0, width),
-                    height + 30,
-                    Phaser.Math.RND.pick(flowers),
-                    { fontSize: Phaser.Math.Between(30, 50) + 'px' }
-                );
-
-                this.tweens.add({
-                    targets: flower,
-                    y: -30,
-                    x: flower.x + Phaser.Math.Between(-20, 20),
-                    alpha: { from: 1, to: 0 },
-                    duration: 4000,
-                    onComplete: () => flower.destroy()
-                });
-            },
-            loop: true
+        // 2. CONFETTI RAIN with gravity
+        this.add.particles(0, 0, 'confetti', {
+            x: { min: 0, max: width },
+            y: -30,
+            lifespan: 5000,
+            speedY: { min: 100, max: 200 },
+            speedX: { min: -50, max: 50 },
+            gravityY: 200,
+            rotation: { min: 0, max: 360 },
+            rotateSpeed: { min: -200, max: 200 },
+            scale: { min: 0.8, max: 1.5 },
+            tint: [0xFF0000, 0xFFA500, 0xFFFF00, 0x00FF00, 0x0000FF, 0xFF00FF],
+            frequency: 100
         });
 
-        // 4. SIDE HEARTS
+        // 3. FLOWERS rising from bottom
+        this.add.particles(0, 0, 'flower', {
+            x: { min: 0, max: width },
+            y: height + 30,
+            lifespan: 4000,
+            speedY: { min: -80, max: -150 },
+            speedX: { min: -20, max: 20 },
+            scale: { start: 1, end: 0.5 },
+            alpha: { start: 1, end: 0 },
+            frequency: 400
+        });
+
+        // 4. SIDE HEARTS converging to center
         this.time.addEvent({
             delay: 600,
             callback: () => {
                 // Left side
-                const heartL = this.add.text(-20, Phaser.Math.Between(0, height), '💕', {
-                    fontSize: Phaser.Math.Between(25, 40) + 'px'
-                });
-                this.tweens.add({
-                    targets: heartL,
-                    x: width / 2,
-                    alpha: 0,
-                    duration: 5000,
-                    onComplete: () => heartL.destroy()
+                this.add.particles(-20, Phaser.Math.Between(0, height), 'heart', {
+                    speedX: { min: 50, max: 100 },
+                    lifespan: 5000,
+                    scale: { start: 1.5, end: 0 },
+                    alpha: { start: 1, end: 0 },
+                    quantity: 1
                 });
 
                 // Right side
-                const heartR = this.add.text(width + 20, Phaser.Math.Between(0, height), '💕', {
-                    fontSize: Phaser.Math.Between(25, 40) + 'px'
-                });
-                this.tweens.add({
-                    targets: heartR,
-                    x: width / 2,
-                    alpha: 0,
-                    duration: 5000,
-                    onComplete: () => heartR.destroy()
+                this.add.particles(width + 20, Phaser.Math.Between(0, height), 'heart', {
+                    speedX: { min: -100, max: -50 },
+                    lifespan: 5000,
+                    scale: { start: 1.5, end: 0 },
+                    alpha: { start: 1, end: 0 },
+                    quantity: 1
                 });
             },
             loop: true
         });
 
-        // 5. AMBIENT SPARKLES
-        this.time.addEvent({
-            delay: 200,
-            callback: () => {
-                const sparkle = this.add.text(
-                    Phaser.Math.Between(0, width),
-                    Phaser.Math.Between(0, height),
-                    '✨',
-                    { fontSize: Phaser.Math.Between(10, 25) + 'px' }
-                ).setAlpha(0.8);
-
-                this.tweens.add({
-                    targets: sparkle,
-                    alpha: 0,
-                    scale: 0,
-                    duration: 1000,
-                    onComplete: () => sparkle.destroy()
-                });
-            },
-            loop: true
+        // 5. AMBIENT SPARKLES everywhere
+        this.add.particles(0, 0, 'sparkle', {
+            x: { min: 0, max: width },
+            y: { min: 0, max: height },
+            lifespan: 1000,
+            scale: { start: 0.5, end: 0 },
+            alpha: { start: 0.8, end: 0 },
+            blendMode: 'ADD',
+            frequency: 200
         });
 
         // 6. FOOTER MESSAGE

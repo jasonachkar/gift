@@ -14,39 +14,33 @@ export default class MeetingScene extends Phaser.Scene {
         const groundY = height - 100;
 
         // Garden background
-        this.add.rectangle(0, 0, width, height, 0xFFDAE9).setOrigin(0, 0).setDepth(-100);
-        // TODO: Add garden background image when available
-        // this.add.image(width / 2, height / 2, 'garden-bg').setOrigin(0.5).setAlpha(0.7).setDepth(-90);
+        this.add.image(width / 2, height / 2, 'garden-bg').setOrigin(0.5).setAlpha(0.7).setDepth(-90);
 
         // Ground
         this.add.rectangle(0, groundY, width, 100, 0x4C9900).setOrigin(0, 0);
 
-        // Decorations (placeholder emojis)
+        // Decorations - flowers
         for (let i = 0; i < 10; i++) {
-            const flower = Phaser.Math.RND.pick(['🌸', '🌺', '🌷', '🌹', '🌻']);
-            this.add.text(
+            this.add.sprite(
                 Phaser.Math.Between(50, width - 50),
                 groundY - Phaser.Math.Between(0, 30),
-                flower,
-                { fontSize: Phaser.Math.Between(30, 50) + 'px' }
-            ).setOrigin(0.5, 1);
+                'flower'
+            ).setScale(Phaser.Math.FloatBetween(0.8, 1.2)).setOrigin(0.5, 1);
         }
 
         // Trees
-        this.add.text(50, groundY, '🌳', { fontSize: '100px' }).setOrigin(0.5, 1);
-        this.add.text(width - 50, groundY, '🌳', { fontSize: '100px' }).setOrigin(0.5, 1);
+        this.add.sprite(50, groundY, 'tree').setScale(1.5).setOrigin(0.5, 1);
+        this.add.sprite(width - 50, groundY, 'tree').setScale(1.5).setOrigin(0.5, 1);
 
         // Bench
-        this.add.text(width / 2, groundY, '🪑', { fontSize: '60px' }).setOrigin(0.5, 1);
+        this.add.sprite(width / 2, groundY, 'bench').setScale(1.2).setOrigin(0.5, 1);
 
-        // Characters (emoji placeholders - will be sprites)
-        this.girlfriend = this.add.text(-50, groundY, '👩‍🎓', {
-            fontSize: '70px'
-        }).setOrigin(0.5, 1);
+        // Character sprites
+        this.girlfriend = this.add.sprite(-50, groundY, 'girl-sprite')
+            .setScale(2.5).setOrigin(0.5, 1);
 
-        this.boyfriend = this.add.text(width / 2 + 100, groundY, '👨', {
-            fontSize: '70px'
-        }).setOrigin(0.5, 1);
+        this.boyfriend = this.add.sprite(width / 2 + 100, groundY, 'boy-sprite')
+            .setScale(2.5).setOrigin(0.5, 1);
 
         // Boyfriend idle animation
         this.tweens.add({
@@ -61,31 +55,18 @@ export default class MeetingScene extends Phaser.Scene {
         // Dialogue system
         this.dialogueSystem = new DialogueSystem(this);
 
-        // Floating petals
-        this.time.addEvent({
-            delay: 500,
-            callback: () => {
-                const petal = this.add.text(
-                    Phaser.Math.Between(0, width),
-                    -20,
-                    '🌸',
-                    { fontSize: Phaser.Math.Between(20, 30) + 'px' }
-                ).setAlpha(0.8);
-
-                this.tweens.add({
-                    targets: petal,
-                    y: height + 20,
-                    x: petal.x + Phaser.Math.Between(-20, 20),
-                    duration: 6000,
-                    onComplete: () => petal.destroy()
-                });
-            },
-            loop: true
+        // Floating petals particle emitter
+        this.add.particles(0, 0, 'petal', {
+            x: { min: 0, max: width },
+            y: -20,
+            lifespan: 6000,
+            speedY: { min: 40, max: 70 },
+            speedX: { min: -20, max: 20 },
+            scale: { start: 0.5, end: 0.2 },
+            alpha: { start: 0.8, end: 0 },
+            rotate: { start: 0, end: 360 },
+            frequency: 500
         });
-
-        // TODO: Add music
-        // this.meetingMusic = this.sound.add('meeting-romance', { loop: true, volume: 0.5 });
-        // this.meetingMusic.play();
 
         // Start animation sequence
         this.startSequence(width, height, groundY);
@@ -155,18 +136,14 @@ export default class MeetingScene extends Phaser.Scene {
             duration: 500,
             ease: 'Power2',
             onComplete: () => {
-                // Replace with couple emoji
+                // Replace with couple sprite
                 this.girlfriend.setVisible(false);
                 this.boyfriend.setVisible(false);
 
-                const couple = this.add.text(width / 2, groundY, '👫', {
-                    fontSize: '80px'
-                }).setOrigin(0.5, 1);
+                const couple = this.add.sprite(width / 2, groundY, 'couple-sprite')
+                    .setScale(2.5).setOrigin(0.5, 1);
 
-                // TODO: Play hug sound
-                // this.sound.play('hug', { volume: 0.6 });
-
-                // Heart explosion
+                // Heart explosion particle effect
                 this.createHeartExplosion(width / 2, groundY - 50);
 
                 // Show message
@@ -189,26 +166,17 @@ export default class MeetingScene extends Phaser.Scene {
     }
 
     createHeartExplosion(x, y) {
-        // Burst of hearts
-        for (let i = 0; i < 20; i++) {
-            this.time.delayedCall(i * 50, () => {
-                const heart = this.add.text(x, y, '❤️', {
-                    fontSize: Phaser.Math.Between(20, 40) + 'px'
-                }).setOrigin(0.5);
-
-                const angle = Phaser.Math.Between(0, 360);
-                const speed = Phaser.Math.Between(100, 300);
-
-                this.tweens.add({
-                    targets: heart,
-                    x: heart.x + Math.cos(angle) * speed,
-                    y: heart.y + Math.sin(angle) * speed,
-                    alpha: 0,
-                    duration: 2000,
-                    onComplete: () => heart.destroy()
-                });
-            });
-        }
+        // Burst of hearts using particle emitter
+        const heartBurst = this.add.particles(x, y, 'heart', {
+            speed: { min: 100, max: 300 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 1.5, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 2000,
+            quantity: 20,
+            frequency: 50,
+            duration: 1000
+        });
     }
 
     showContinuePrompt(width, height) {
