@@ -1,11 +1,22 @@
 {
-  "name": "support-gift",
-  "version": "1.0.0",
-  "description": "A loving support gift with animations",
-  "main": "index.html",
+  "name": "journey-to-you",
+  "version": "2.0.0",
+  "description": "An interactive romantic journey game",
+  "type": "module",
   "scripts": {
-    "start": "npx serve ."
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "keywords": ["gift", "animation", "support"],
-  "license": "MIT"
+  "keywords": [
+    "gift",
+    "game",
+    "phaser",
+    "love"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "phaser": "^3.90.0",
+    "vite": "^7.3.1"
+  }
 }
