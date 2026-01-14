@@ -7,6 +7,8 @@ export default class PreloadScene extends Phaser.Scene {
 
     preload() {
         const { width, height } = this.cameras.main;
+        const assetBase = typeof window !== 'undefined' && window.__giftAssetBase ? window.__giftAssetBase : '';
+        this.load.setPath(assetBase);
 
         // Loading bar background
         const barWidth = 400;

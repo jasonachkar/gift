@@ -52,33 +52,21 @@ export default class RevealScene extends Phaser.Scene {
 
         // Message texts (hidden initially)
         this.messages = [
-            this.add.text(width / 2, height / 2 - 100, 'I Love You Baby! 💖', {
-                fontSize: '36px',
-                fontFamily: 'Quicksand',
-                color: '#E91E63',
-                fontStyle: 'bold'
-            }).setOrigin(0.5).setAlpha(0).setDepth(20),
-
-            this.add.text(width / 2, height / 2 - 40, 'I Support You!', {
-                fontSize: '32px',
-                fontFamily: 'Quicksand',
-                color: '#9C27B0',
-                fontStyle: 'bold'
-            }).setOrigin(0.5).setAlpha(0).setDepth(20),
-
-            this.add.text(width / 2, height / 2 + 20, 'I Believe You Can Do This!!', {
-                fontSize: '28px',
-                fontFamily: 'Quicksand',
-                color: '#673AB7',
-                fontStyle: 'bold'
-            }).setOrigin(0.5).setAlpha(0).setDepth(20),
-
-            this.add.text(width / 2, height / 2 + 70, '🎓 Go Crush It! 🌟', {
-                fontSize: '26px',
-                fontFamily: 'Quicksand',
-                color: '#3F51B5',
-                fontStyle: 'bold'
-            }).setOrigin(0.5).setAlpha(0).setDepth(20)
+            this.add.text(
+                width / 2,
+                height / 2 - 60,
+                'My love! the first day i met you i was exhausted from work, angry at everyone and hating life. ' +
+                'However, being with you lit up my night and made me laugh. I loved every second of it! ' +
+                'I am thankful you are in my life. I love you! I believe in you! I support you! Crush them all!',
+                {
+                    fontSize: '22px',
+                    fontFamily: 'Quicksand',
+                    color: '#E91E63',
+                    fontStyle: 'bold',
+                    align: 'center',
+                    wordWrap: { width: 460 }
+                }
+            ).setOrigin(0.5).setAlpha(0).setDepth(20)
         ];
 
         // Start cinematic sequence

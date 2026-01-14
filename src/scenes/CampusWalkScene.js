@@ -121,13 +121,16 @@ export default class CampusWalkScene extends Phaser.Scene {
         this.spawnDecorations(groundY);
 
         // Spawn collectible hearts
-        this.hearts = this.physics.add.group();
+        this.hearts = this.add.group();
         this.spawnHearts(groundY);
-        this.physics.add.overlap(this.player, this.hearts, this.collectHeart, null, this);
 
         // Controls
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.moveKeys = this.input.keyboard.addKeys({
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D
+        });
 
         // Touch controls
         this.input.on('pointerdown', this.handleTouch, this);
@@ -189,20 +192,27 @@ export default class CampusWalkScene extends Phaser.Scene {
         if (this.isTransitioning) {
             return;
         }
-        const movingLeft = this.cursors.left.isDown || this.touchMoveDirection < 0;
-        const movingRight = this.cursors.right.isDown || this.touchMoveDirection > 0;
+        const movingLeft = this.cursors.left.isDown
+            || (this.moveKeys && this.moveKeys.left.isDown)
+            || this.touchMoveDirection < 0;
+        const movingRight = this.cursors.right.isDown
+            || (this.moveKeys && this.moveKeys.right.isDown)
+            || this.touchMoveDirection > 0;
         const onGround = this.player.body.blocked.down || this.player.body.touching.down;
 
-        // Movement with acceleration
-        const accel = 1400;
+        // Stable movement (direct velocity)
+        const moveSpeed = 260;
         if (movingLeft) {
-            this.player.body.setAccelerationX(-accel);
+            this.player.body.setAccelerationX(0);
+            this.player.body.setVelocityX(-moveSpeed);
             this.player.setFlipX(true);
         } else if (movingRight) {
-            this.player.body.setAccelerationX(accel);
+            this.player.body.setAccelerationX(0);
+            this.player.body.setVelocityX(moveSpeed);
             this.player.setFlipX(false);
         } else {
             this.player.body.setAccelerationX(0);
+            this.player.body.setVelocityX(0);
         }
 
         // Jump buffering and coyote time
@@ -295,7 +305,7 @@ export default class CampusWalkScene extends Phaser.Scene {
         this.progressText.setText(`${percent}%`);
         this.updateColorGrade(progressRatio);
         this.updateStoryBeats();
-        this.attractHearts();
+        this.attractHearts(time, delta);
 
         // Check if reached destination
         if (!this.isTransitioning && this.progress >= this.targetProgress) {
@@ -361,28 +371,39 @@ export default class CampusWalkScene extends Phaser.Scene {
         }
     }
 
-    attractHearts() {
+    attractHearts(time, delta) {
         if (!this.hearts) {
             return;
         }
+        const deltaSec = delta ? delta / 1000 : 0;
+        const t = (time || 0) / 1000;
+        const collectRadiusSq = 30 * 30;
         this.hearts.children.iterate((heart) => {
-            if (!heart || !heart.active || !heart.body) {
+            if (!heart || !heart.active) {
                 return;
             }
             const dx = this.player.x - heart.x;
             const dy = this.player.y - heart.y;
             const distSq = dx * dx + dy * dy;
+            if (distSq < collectRadiusSq) {
+                this.collectHeart(this.player, heart);
+                return;
+            }
             if (distSq < this.heartMagnetRadiusSq) {
-                if (!heart.getData('magnetized')) {
-                    const floatTween = heart.getData('floatTween');
-                    if (floatTween) {
-                        floatTween.stop();
-                    }
-                    heart.setData('magnetized', true);
-                }
+                heart.setData('magnetized', true);
+            }
+
+            if (heart.getData('magnetized')) {
                 const dist = Math.max(1, Math.sqrt(distSq));
-                const pull = 240;
-                heart.body.setVelocity((dx / dist) * pull, (dy / dist) * pull);
+                const pull = 320;
+                heart.x += (dx / dist) * pull * deltaSec;
+                heart.y += (dy / dist) * pull * deltaSec;
+            } else {
+                const baseY = heart.getData('baseY');
+                const bobSpeed = heart.getData('bobSpeed');
+                const bobPhase = heart.getData('bobPhase');
+                const bobAmplitude = heart.getData('bobAmplitude');
+                heart.y = baseY + Math.sin(t * bobSpeed + bobPhase) * bobAmplitude;
             }
         });
     }
@@ -454,42 +475,32 @@ export default class CampusWalkScene extends Phaser.Scene {
 
     spawnHearts(groundY) {
         let xPos = 300;
+        const minY = Math.max(120, groundY - 220);
+        const maxY = groundY - 120;
         while (xPos < this.targetProgress + 200) {
             const heart = this.add.sprite(
                 xPos,
-                Phaser.Math.Between(200, 400),
+                Phaser.Math.Between(minY, maxY),
                 'heart'
             ).setScale(1.5).setOrigin(0.5);
 
-            this.physics.add.existing(heart);
-            heart.body.setAllowGravity(false);
-            heart.body.setDrag(200, 200);
-            heart.body.setMaxVelocity(260, 260);
             heart.setData('magnetized', false);
+            heart.setData('baseY', heart.y);
+            heart.setData('bobAmplitude', Phaser.Math.FloatBetween(6, 12));
+            heart.setData('bobSpeed', Phaser.Math.FloatBetween(1.4, 2.2));
+            heart.setData('bobPhase', Phaser.Math.FloatBetween(0, Math.PI * 2));
             this.hearts.add(heart);
-
-            // Floating animation
-            const floatTween = this.tweens.add({
-                targets: heart,
-                y: heart.y - 10,
-                duration: 1000,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-            heart.setData('floatTween', floatTween);
 
             xPos += Phaser.Math.Between(250, 450);
         }
     }
 
     collectHeart(player, heart) {
+        if (!heart || !heart.active) {
+            return;
+        }
         const x = heart.x;
         const y = heart.y;
-        const floatTween = heart.getData('floatTween');
-        if (floatTween) {
-            floatTween.stop();
-        }
         heart.destroy();
         this.heartsCollected++;
         this.heartCounter.setText(`💕 ${this.heartsCollected}`);

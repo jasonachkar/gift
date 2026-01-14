@@ -11,6 +11,9 @@ if (!Phaser) {
     throw new Error('Phaser not loaded. Make sure the Phaser script is included before main.js.');
 }
 
+const isVite = !!(import.meta && import.meta.env);
+window.__giftAssetBase = isVite ? '' : 'assets/';
+
 const config = {
     type: Phaser.AUTO,
     width: 1280,

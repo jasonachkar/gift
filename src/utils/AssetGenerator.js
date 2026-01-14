@@ -27,7 +27,12 @@ export default class AssetGenerator {
         if (!scene.textures.exists('sparkle')) {
             const sparkle = scene.add.graphics();
             sparkle.fillStyle(0xFFFFFF, 1);
-            sparkle.fillStar(12, 12, 5, 12, 6);
+            sparkle.fillRect(10, 0, 4, 24);
+            sparkle.fillRect(0, 10, 24, 4);
+            sparkle.fillStyle(0xFFFFFF, 0.7);
+            sparkle.fillRect(11, 2, 2, 20);
+            sparkle.fillRect(2, 11, 20, 2);
+            sparkle.fillCircle(12, 12, 3);
             sparkle.generateTexture('sparkle', 24, 24);
             sparkle.destroy();
         }
